@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crypto Portfolio Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-alt: #151a2c;
+      --card: #181e34;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79,70,229,0.2);
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --positive: #22c55e;
+      --negative: #ef4444;
+      --border: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1d2340 0, #050816 45%, #020617 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.9rem;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h1 span.logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      box-shadow: 0 0 18px rgba(79, 70, 229, 0.65);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .header-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    button, select {
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .select {
+      background: #020617;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 16px;
+      border: 1px solid var(--border);
+      outline: none;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      background: radial-gradient(circle at top left, #4f46e5, #0f172a);
+      color: #e5e7eb;
+      padding: 7px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
+      box-shadow: 0 0 10px rgba(79, 70, 229, 0.6);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 16px rgba(79, 70, 229, 0.8);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 0 6px rgba(79, 70, 229, 0.6);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2.1fr 1.4fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 960px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #111827, #020617);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.08);
+      padding: 14px 16px 16px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.90);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .totals {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .stat-chip {
+      flex: 1 1 130px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.8));
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .stat-sub {
+      font-size: 0.78rem;
+      margin-top: 2px;
+    }
+
+    .stat-positive {
+      color: var(--positive);
+    }
+
+    .stat-negative {
+      color: var(--negative);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 0.8rem;
+    }
+
+    thead {
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), rgba(15,23,42,0.98));
+    }
+
+    th, td {
+      padding: 7px 6px;
+      text-align: right;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    tbody tr:nth-child(even) {
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    tbody tr:hover {
+      background: rgba(30, 64, 175, 0.45);
+    }
+
+    .table-wrapper {
+      max-height: 420px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .tag {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .change-positive {
+      color: var(--positive);
+    }
+
+    .change-negative {
+      color: var(--negative);
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 110px;
+    }
+
+    .chart-container {
+      margin-top: 6px;
+      height: 190px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      display: inline-block;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+    }
+
+    .error {
+      color: var(--negative);
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header-row">
+      <div>
+        <h1>
+          <span class="logo">CP</span>
+          Crypto Portfolio
+        </h1>
+        <div class="subtitle" id="subtitle">Live prices via CoinGecko • Loading...</div>
+      </div>
+      <div class="controls">
+        <div class="pill">
+          <span class="pill-label">Sort by</span>
+          <select id="sortField" class="select">
+            <option value="name">Name</option>
+            <option value="currentPrice">Current price</option>
+          </select>
+          <select id="sortDir" class="select">
+            <option value="asc">Asc</option>
+            <option value="desc" selected>Desc</option>
+          </select>
+        </div>
+        <button class="btn" id="refreshBtn">
+          <span>⟳ Refresh prices</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Holdings</div>
+            <div class="card-subtitle">Sortable by name and current market price.</div>
+          </div>
+          <span class="tag" id="rowCountTag">0 assets</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Coin</th>
+                <th>Coins</th>
+                <th>Avg Buy</th>
+                <th>Invested</th>
+                <th>Current</th>
+                <th>Market Value</th>
+                <th>P&amp;L</th>
+                <th>P&amp;L %</th>
+              </tr>
+            </thead>
+            <tbody id="portfolioBody">
+              <!-- rows injected here -->
+            </tbody>
+          </table>
+        </div>
+        <div class="error" id="errorMsg" style="display:none;"></div>
+      </div>
+
+      <!-- Right: Totals + Charts -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Overview</div>
+            <div class="card-subtitle">Allocation and performance at a glance.</div>
+          </div>
+          <span class="tag" id="statusTag">
+            <span class="status-dot"></span>Live
+          </span>
+        </div>
+
+        <div class="totals">
+          <div class="stat-chip">
+            <div class="stat-label">Total Invested</div>
+            <div class="stat-value" id="totalInvested">$0</div>
+            <div class="stat-sub" id="totalInvestedSub">–</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-label">Current Value</div>
+            <div class="stat-value" id="totalCurrent">$0</div>
+            <div class="stat-sub" id="totalCurrentSub">–</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-label">Net P&amp;L</div>
+            <div class="stat-value" id="netPL">$0</div>
+            <div class="stat-sub" id="netPLPct">–</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="allocationChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="plChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Prices update on each refresh. Use browser reload or the Refresh button for latest data.
+    </div>
+  </div>
+
+  <script>
+    // === 1. Portfolio data from your Excel ===
+    // name: label as in your sheet
+    // symbol: short code used for display
+    // avgPrice: price you bought at (USD)
+    // amount: coins in hand
+    const rawHoldings = [
+      { name: "HEC", symbol: "HEC", avgPrice: 104.47, amount: 384.0493 },
+      { name: "VET", symbol: "VET", avgPrice: 0.08, amount: 234148.044120768 },
+      { name: "ETH", symbol: "ETH", avgPrice: 1724.40, amount: 12.00381445 },
+      { name: "UST", symbol: "UST", avgPrice: 1.00, amount: 11353.6463 },
+      { name: "CAKE", symbol: "CAKE", avgPrice: 13.92, amount: 822.694 },
+      { name: "ADA", symbol: "ADA", avgPrice: 1.37, amount: 6503.80186061 },
+      { name: "LTC", symbol: "LTC", avgPrice: 151.36, amount: 37.34770697 },
+      { name: "STRONG", symbol: "STRONG", avgPrice: 570.80, amount: 10 },
+      { name: "AAVE", symbol: "AAVE", avgPrice: 245.75, amount: 24.8619833118 },
+      { name: "MATIC", symbol: "MATIC", avgPrice: 1.07, amount: 5327.6 },
+      { name: "OHM", symbol: "OHM", avgPrice: 1098.23, amount: 4.5528 },
+      { name: "THETA", symbol: "THETA", avgPrice: 6.27, amount: 795.0419901 },
+      { name: "ICP", symbol: "ICP", avgPrice: 115.30, amount: 43.640064941 },
+      { name: "USDC", symbol: "USDC", avgPrice: 1.00, amount: 9477.336 },
+      { name: "GRT", symbol: "GRT", avgPrice: 1.06, amount: 6070.9949 },
+      { name: "DOGE", symbol: "DOGE", avgPrice: 0.32, amount: 16783.34447962 },
+      { name: "DOT", symbol: "DOT", avgPrice: 31.07, amount: 95.2682758174 },
+      { name: "SPA", symbol: "SPA", avgPrice: 210.10, amount: 13.4222 },
+      { name: "META (Metaverse Pro)", symbol: "META", avgPrice: 94.83, amount: 0 },
+      { name: "LINK", symbol: "LINK", avgPrice: 16.74, amount: 162.1556827532 },
+      { name: "XLM", symbol: "XLM", avgPrice: 0.34, amount: 7500 },
+      { name: "IB (Iron Bank)", symbol: "IB", avgPrice: 127.58, amount: 19.5952 },
+      { name: "MINA", symbol: "MINA", avgPrice: 2.82, amount: 868.267 },
+      { name: "AVAX", symbol: "AVAX", avgPrice: 62.11, amount: 56.3 },
+      { name: "XAVA", symbol: "XAVA", avgPrice: 16.16, amount: 125.9 },
+      { name: "AZURA NFT", symbol: "AZURA_NFT", avgPrice: 282.0, amount: 7 },
+      { name: "DIP", symbol: "DIP", avgPrice: 0.15, amount: 8643.46 },
+      { name: "FIRO (FIRO)", symbol: "FIRO", avgPrice: 12.59, amount: 98.048 },
+      { name: "SHA", symbol: "SHA", avgPrice: 0.01, amount: 154763.36427563 },
+      { name: "PYTH", symbol: "PYTH", avgPrice: 0.10, amount: 10000 },
+      { name: "JUP", symbol: "JUP", avgPrice: 0.51, amount: 2000 },
+      { name: "TONE/TFD", symbol: "TONE", avgPrice: 0.11, amount: 7251.305 },
+      { name: "BLOK", symbol: "BLOK", avgPrice: 0.12, amount: 5000 },
+      { name: "bMAG", symbol: "BMAG", avgPrice: 2.75, amount: 200 },
+      { name: "ONE", symbol: "ONE", avgPrice: 0.07, amount: 7204.1957235894 },
+      { name: "RAZOR", symbol: "RAZOR", avgPrice: 0.14, amount: 3528.63 },
+      { name: "AZURA", symbol: "AZURA", avgPrice: 60.0, amount: 12.4031007752 },
+      { name: "ARB", symbol: "ARB", avgPrice: 0.38, amount: 0 },
+      { name: "BitTorrent (BTT)", symbol: "BTT", avgPrice: 0.01, amount: 62937.61 },
+      { name: "DATA", symbol: "DATA", avgPrice: 0.17, amount: 2497.5 },
+      { name: "VRA", symbol: "VRA", avgPrice: 0.01, amount: 32317.0431198227 },
+      { name: "UBX", symbol: "UBX", avgPrice: 0.0, amount: 125170.888 },
+      { name: "BCH", symbol: "BCH", avgPrice: 902.5, amount: 0.2556 },
+      { name: "ETC", symbol: "ETC", avgPrice: 3.94, amount: 40.36 },
+      { name: "BSV", symbol: "BSV", avgPrice: 172.24, amount: 0.8936767303 },
+      { name: "CELO", symbol: "CELO", avgPrice: 3.6, amount: 41.4 },
+      { name: "CSPR", symbol: "CSPR", avgPrice: 0.29, amount: 442.5 },
+      { name: "0x - ZRX", symbol: "ZRX", avgPrice: 0.29, amount: 272.57 },
+      { name: "IOTA", symbol: "IOTA", avgPrice: 1.25, amount: 99.9 },
+      { name: "Bitcoin SV BSV", symbol: "BSV2", avgPrice: 82.34, amount: 0.255725 },
+      { name: "Imperium Enterprises", symbol: "IMPERIUM", avgPrice: 0.0, amount: 3609.28 },
+      { name: "Ontology (ONT)", symbol: "ONT", avgPrice: 5.4, amount: 19.99 },
+      { name: "Selfkey (KEY)", symbol: "KEY", avgPrice: 0.03, amount: 2497.5 },
+      { name: "Ontology Gas (ONTG)", symbol: "ONG", avgPrice: 0.99, amount: 4.67406862 },
+      { name: "JST (JUST)", symbol: "JST", avgPrice: 0.13, amount: 5.668 },
+      { name: "WIN (WINK)", symbol: "WIN", avgPrice: 0.0, amount: 477.859 },
+      { name: "TIME (MEMO)", symbol: "TIME", avgPrice: 6736.0, amount: 0.042331 },
+      { name: "MIM", symbol: "MIM", avgPrice: 1.0, amount: 0 },
+      { name: "Heroes Chain", symbol: "HEROES", avgPrice: 0.35, amount: 0 },
+      { name: "SHIB", symbol: "SHIB", avgPrice: 0.0, amount: 0 },
+      { name: "Platypus", symbol: "PLATYPUS", avgPrice: 0.10, amount: 138.742 },
+      { name: "FTM", symbol: "FTM", avgPrice: 1.66, amount: 999.497528 },
+      { name: "TRON (TRX)", symbol: "TRX", avgPrice: 0.05, amount: 0 },
+      { name: "BNB", symbol: "BNB", avgPrice: 308.72, amount: 0.324552 },
+      { name: "PAPA", symbol: "PAPA", avgPrice: 9.12, amount: 0 },
+      { name: "LUNA", symbol: "LUNA", avgPrice: 46.9, amount: 100 },
+      { name: "HBAR", symbol: "HBAR", avgPrice: 0.23, amount: 100000.80388924 },
+      { name: "Ripple (XRP)", symbol: "XRP", avgPrice: 1.55, amount: 13.051 },
+      { name: "LOOM", symbol: "LOOM", avgPrice: 0.08, amount: 150.056 },
+      { name: "QNT", symbol: "QNT", avgPrice: 28.98, amount: 0.3526056319 },
+      { name: "BTC", symbol: "BTC", avgPrice: 28433.76, amount: 1.2794239 },
+      { name: "SOL", symbol: "SOL", avgPrice: 137.07, amount: 0.5195336836 },
+    ];
+
+    // === 2. Map to CoinGecko IDs ===
+    // You may adjust IDs if anything is mismatched.
+    const coingeckoIdMap = {
+      BTC: "bitcoin",
+      ETH: "ethereum",
+      SOL: "solana",
+      ADA: "cardano",
+      LTC: "litecoin",
+      DOT: "polkadot",
+      DOGE: "dogecoin",
+      XRP: "ripple",
+      BCH: "bitcoin-cash",
+      BNB: "binancecoin",
+      USDC: "usd-coin",
+      MATIC: "matic-network",
+      LINK: "chainlink",
+      XLM: "stellar",
+      AVAX: "avalanche-2",
+      FTM: "fantom",
+      HBAR: "hedera-hashgraph",
+      IOTA: "iota",
+      CELO: "celo",
+      ETC: "ethereum-classic",
+      ZRX: "0x",
+      MINA: "mina-protocol",
+      AAVE: "aave",
+      GRT: "the-graph",
+      JUP: "jupiter-exchange-solana",
+      PYTH: "pyth-network",
+      VET: "vechain",
+      VRA: "verasity",
+      JST: "just",
+      TRX: "tron",
+      BTT: "bittorrent",
+      LUNA: "terra-luna-2",
+      QNT: "quant-network",
+      // Fallback: others will be treated as unknown and priced at 0
+    };
+
+    let enrichedHoldings = [];
+    let allocationChart, plChart;
+
+    function formatCurrency(num) {
+      if (!isFinite(num)) return "$0";
+      return "$" + num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
+    function formatPercent(num) {
+      if (!isFinite(num)) return "0%";
+      return (num >= 0 ? "+" : "") + num.toFixed(2) + "%";
+    }
+
+    function getColorForValue(v) {
+      return v >= 0 ? "change-positive" : "change-negative";
+    }
+
+    function getChartColors(n) {
+      const base = [
+        "#4f46e5", "#06b6d4", "#22c55e", "#f97316",
+        "#e11d48", "#6366f1", "#0ea5e9", "#84cc16",
+        "#a855f7", "#facc15"
+      ];
+      const colors = [];
+      for (let i = 0; i < n; i++) {
+        colors.push(base[i % base.length]);
+      }
+      return colors;
+    }
+
+    async function fetchPrices() {
+      const ids = [];
+      const idByKey = {};
+      rawHoldings.forEach((h) => {
+        const id = coingeckoIdMap[h.symbol];
+        if (id && !ids.includes(id) && h.amount > 0) {
+          ids.push(id);
+          idByKey[h.symbol] = id;
+        }
+      });
+
+      if (ids.length === 0) {
+        return {};
+      }
+
+      const url =
+        "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=" +
+        ids.join(",");
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("Price API request failed");
+      }
+      const data = await res.json();
+      const priceBySymbol = {};
+      Object.keys(idByKey).forEach((symbol) => {
+        const id = idByKey[symbol];
+        const obj = data[id];
+        priceBySymbol[symbol] = obj && obj.usd ? obj.usd : 0;
+      });
+      return priceBySymbol;
+    }
+
+    function computeMetrics(priceBySymbol) {
+      enrichedHoldings = rawHoldings
+        .filter((h) => h.amount && h.amount > 0)
+        .map((h) => {
+          const currentPrice = priceBySymbol[h.symbol] || 0;
+          const invested = h.avgPrice * h.amount;
+          const currentValue = currentPrice * h.amount;
+          const pl = currentValue - invested;
+          const plPct = invested > 0 ? (pl / invested) * 100 : 0;
+          return { ...h, currentPrice, invested, currentValue, pl, plPct };
+        });
+    }
+
+    function renderTable(sortField = "name", sortDir = "desc") {
+      const body = document.getElementById("portfolioBody");
+      body.innerHTML = "";
+
+      const items = [...enrichedHoldings];
+      items.sort((a, b) => {
+        let va, vb;
+        if (sortField === "currentPrice") {
+          va = a.currentPrice;
+          vb = b.currentPrice;
+        } else {
+          va = (a.name || "").toLowerCase();
+          vb = (b.name || "").toLowerCase();
+        }
+        if (va < vb) return sortDir === "asc" ? -1 : 1;
+        if (va > vb) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      });
+
+      items.forEach((h) => {
+        const tr = document.createElement("tr");
+
+        const invested = h.invested;
+        const currentValue = h.currentValue;
+        const pl = h.pl;
+        const plPct = h.plPct;
+
+        tr.innerHTML = `
+          <td>${h.name}</td>
+          <td>${h.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })}</td>
+          <td>${formatCurrency(h.avgPrice)}</td>
+          <td>${formatCurrency(invested)}</td>
+          <td>${h.currentPrice ? formatCurrency(h.currentPrice) : "-"}</td>
+          <td>${h.currentPrice ? formatCurrency(currentValue) : "-"}</td>
+          <td class="${getColorForValue(pl)}">${formatCurrency(pl)}</td>
+          <td class="${getColorForValue(plPct)}">${formatPercent(plPct)}</td>
+        `;
+        body.appendChild(tr);
+      });
+
+      document.getElementById("rowCountTag").textContent =
+        items.length + " assets";
+    }
+
+    function renderTotals() {
+      const totalInvested = enrichedHoldings.reduce(
+        (sum, h) => sum + h.invested,
+        0
+      );
+      const totalCurrent = enrichedHoldings.reduce(
+        (sum, h) => sum + h.currentValue,
+        0
+      );
+      const netPL = totalCurrent - totalInvested;
+      const netPLPct = totalInvested > 0 ? (netPL / totalInvested) * 100 : 0;
+
+      const investedEl = document.getElementById("totalInvested");
+      const investedSubEl = document.getElementById("totalInvestedSub");
+      const currentEl = document.getElementById("totalCurrent");
+      const currentSubEl = document.getElementById("totalCurrentSub");
+      const plEl = document.getElementById("netPL");
+      const plPctEl = document.getElementById("netPLPct");
+
+      investedEl.textContent = formatCurrency(totalInvested);
+      investedSubEl.textContent =
+        "Across " + enrichedHoldings.length + " assets";
+
+      currentEl.textContent = formatCurrency(totalCurrent);
+      currentSubEl.textContent =
+        "Δ " +
+        formatCurrency(netPL) +
+        " (" +
+        formatPercent(netPLPct) +
+        ")";
+
+      plEl.textContent = formatCurrency(netPL);
+      plEl.className =
+        "stat-value " + (netPL >= 0 ? "stat-positive" : "stat-negative");
+      plPctEl.textContent = formatPercent(netPLPct);
+      plPctEl.className =
+        "stat-sub " + (netPL >= 0 ? "stat-positive" : "stat-negative");
+    }
+
+    function renderCharts() {
+      const labels = enrichedHoldings
+        .sort((a, b) => b.currentValue - a.currentValue)
+        .slice(0, 12)
+        .map((h) => h.symbol);
+      const values = enrichedHoldings
+        .sort((a, b) => b.currentValue - a.currentValue)
+        .slice(0, 12)
+        .map((h) => h.currentValue);
+      const colors = getChartColors(labels.length);
+
+      const plLabels = enrichedHoldings
+        .sort((a, b) => Math.abs(b.pl) - Math.abs(a.pl))
+        .slice(0, 12)
+        .map((h) => h.symbol);
+      const plValues = enrichedHoldings
+        .sort((a, b) => Math.abs(b.pl) - Math.abs(a.pl))
+        .slice(0, 12)
+        .map((h) => h.pl);
+      const plColors = plValues.map((v) =>
+        v >= 0 ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)"
+      );
+
+      const allocationCtx = document
+        .getElementById("allocationChart")
+        .getContext("2d");
+      const plCtx = document.getElementById("plChart").getContext("2d");
+
+      if (allocationChart) allocationChart.destroy();
+      if (plChart) plChart.destroy();
+
+      allocationChart = new Chart(allocationCtx, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [
+            {
+              data: values,
+              backgroundColor: colors,
+              borderWidth: 1,
+              borderColor: "#020617",
+            },
+          ],
+        },
+        options: {
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: "#e5e7eb",
+                boxWidth: 10,
+              },
+            },
+          },
+          cutout: "65%",
+        },
+      });
+
+      plChart = new Chart(plCtx, {
+        type: "bar",
+        data: {
+          labels: plLabels,
+          datasets: [
+            {
+              data: plValues,
+              backgroundColor: plColors,
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            x: {
+              ticks: { color: "#e5e7eb" },
+              grid: { display: false },
+            },
+            y: {
+              ticks: { color: "#9ca3af" },
+              grid: { color: "#1f2937" },
+            },
+          },
+        },
+      });
+    }
+
+    async function refreshPricesAndRender() {
+      const subtitle = document.getElementById("subtitle");
+      const errorEl = document.getElementById("errorMsg");
+      subtitle.textContent = "Fetching live prices…";
+      errorEl.style.display = "none";
+
+      try {
+        const priceBySymbol = await fetchPrices();
+        computeMetrics(priceBySymbol);
+        const sortField = document.getElementById("sortField").value;
+        const sortDir = document.getElementById("sortDir").value;
+        renderTable(sortField, sortDir);
+        renderTotals();
+        renderCharts();
+        const now = new Date();
+        subtitle.textContent =
+          "Live prices via CoinGecko • Last updated " +
+          now.toLocaleTimeString();
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent =
+          "Failed to load live prices. You can still view invested amounts.";
+        errorEl.style.display = "block";
+        // Fallback: compute metrics with zero current prices
+        computeMetrics({});
+        renderTable();
+        renderTotals();
+        renderCharts();
+        subtitle.textContent = "Live prices unavailable • Using fallback data";
+      }
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+      refreshPricesAndRender();
+    });
+
+    document.getElementById("sortField").addEventListener("change", () => {
+      const sortField = document.getElementById("sortField").value;
+      const sortDir = document.getElementById("sortDir").value;
+      renderTable(sortField, sortDir);
+    });
+
+    document.getElementById("sortDir").addEventListener("change", () => {
+      const sortField = document.getElementById("sortField").value;
+      const sortDir = document.getElementById("sortDir").value;
+      renderTable(sortField, sortDir);
+    });
+
+    // Initial load
+    refreshPricesAndRender();
+  </script>
+</body>
+</html>
